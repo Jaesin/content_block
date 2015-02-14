@@ -1,0 +1,5 @@
+name: Content Block
+type: module
+description: Creates a block type for displaying content.
+core: 8.x
+package: Layout
