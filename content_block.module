@@ -11,8 +11,7 @@ use Drupal\Core\Routing\RouteMatchInterface;
  * Implements hook_help().
  */
 
-function content_block_help($route_name, RouteMatchInterface $route_match)
-{
+function content_block_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     // Main module help for the content_block module.
     case 'help.page.content_block':
@@ -22,15 +21,4 @@ function content_block_help($route_name, RouteMatchInterface $route_match)
       return $output;
     break;
   }
-}
-
-/**
- * Implements hook_theme().
- */
-
-function content_block_theme()
-{
-  $theme = [];
-
-  return $theme;
 }
