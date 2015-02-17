@@ -66,13 +66,13 @@ class ContentBlock extends BlockBase {
     // Loop through the available entity types.
     foreach ($type_options as $entity_type) {
       // Use a naming convention for the setting.
-      $mode_id = "view_mode_{$entity_type}";
+      $mode_key = "view_mode_{$entity_type}";
       // Add a view mode selector to use with each entity type.
-      $form[$mode_id] = array(
+      $form[$mode_key] = array(
         '#type' => 'select',
         '#title' => $this->t('View Mode'),
         '#description' => $this->t('Select the view mode to use for displaying the content.'),
-        '#default_value' => isset($this->configuration[$mode_id]) ? $this->configuration[$mode_id] : '',
+        '#default_value' => isset($this->configuration[$mode_key]) ? $this->configuration[$mode_key] : '',
         '#options' => $view_mode_options[$entity_type],
         '#states' => array(
           'visible' => array(
@@ -92,15 +92,15 @@ class ContentBlock extends BlockBase {
     // Get the entity type.
     $entity_type = $form_state->getValue('entity_type');
     // Name of the settings form field that contains the view mode to use.
-    $mode_id = "view_mode_{$entity_type}";
+    $mode_key = "view_mode_{$entity_type}";
 
     // Add the configuration form the submitted values.
     $this->configuration['entity_type'] = $entity_type;
-    $this->configuration[$mode_id] = $form_state->getValue($mode_id);
+    $this->configuration[$mode_key] = $form_state->getValue($mode_key);
 
     // Loop through configuration options and remove outdated settings.
     foreach ($this->configuration as $name=>$value) {
-      if (substr($name, 0, 10) == 'view_mode_' && $name != $mode_id) {
+      if (substr($name, 0, 10) == 'view_mode_' && $name != $mode_key) {
         unset($this->configuration[$name]);
       }
     }
@@ -114,16 +114,26 @@ class ContentBlock extends BlockBase {
     // Get the entity type.
     $entity_type = $this->configuration['entity_type'];
     // Name of the settings form field that contains the view mode to use.
-    $mode_id = "view_mode_{$entity_type}";
+    $mode_key = "view_mode_{$entity_type}";
 
     // Get the requested view mode machine name.
-    $view_mode = !empty($this->configuration[$mode_id]) ? $this->configuration[$mode_id] : NULL;
+    $view_mode = !empty($this->configuration[$mode_key]) ? $this->configuration[$mode_key] : NULL;
 
-    // Get the current request object.
-    $request = \Drupal::request();
+    // Buffer the uuid for alterations.
+    $uuid = '';
+    // Allow modules to override the entity, and view mode that will be output.
+    \Drupal::moduleHandler()->alter('content_block_pre_build', $entity_type, $uuid, $view_mode);
 
-    // Try to grab the entity from the request object.
-    $entity = $request->attributes->get($entity_type);
+    // Make sure we have the necessary pieces to load an alternate entity.
+    if (!empty($entity_type) && !empty($uuid)) {
+      // Load the entity by UUID.
+      $entity = \Drupal::entityManager()->loadEntityByUuid($entity_type, $uuid);
+    } else {
+      // We don't have an alternate entity. Get the current request object.
+      $request = \Drupal::request();
+      // Try to grab the entity from the request object.
+      $entity = $request->attributes->get($entity_type);
+    }
 
     // Make sure we got the entity and a view_mode setting.
     if(!empty($entity) && !empty($view_mode)) {
@@ -135,7 +145,7 @@ class ContentBlock extends BlockBase {
       if(!empty($entity_view_modes[$view_mode]['status']) && $entity_view_modes[$view_mode]['status'] === TRUE) {
         // Create the build array.
         $build = array(
-          'content' => entity_view($entity, $this->configuration[$mode_id]),
+          'content' => entity_view($entity, $this->configuration[$mode_key]),
         );
       }
     }
