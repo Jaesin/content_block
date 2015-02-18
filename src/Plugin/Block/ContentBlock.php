@@ -162,11 +162,11 @@ class ContentBlock extends BlockBase {
         $entity_view_modes[$view_mode]['status'] === TRUE
       ) {
         // Create the build array.
-        $build = array(
+        return array(
           'content' => entity_view($entity, $this->configuration[$mode_key]),
         );
       }
     }
-    return $build;
+    return NULL;
   }
 }
