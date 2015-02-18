@@ -82,6 +82,15 @@ class ContentBlock extends BlockBase {
       );
     }
 
+    // Allow fallback to default entity view display.
+    $form['force_display'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Force Display'),
+      '#description' => $this->t('If enabled, the "default" display will be used if a valid configuration is not found for the entity type (i.e. "content type").'),
+      '#default_value' => isset($this->configuration['force_display']) ? $this->configuration['force_display'] : 0,
+    );
+
+
     return $form;
   }
 
@@ -97,6 +106,7 @@ class ContentBlock extends BlockBase {
     // Add the configuration form the submitted values.
     $this->configuration['entity_type'] = $entity_type;
     $this->configuration[$mode_key] = $form_state->getValue($mode_key);
+    $this->configuration['force_display'] = $form_state->getValue('force_display');
 
     // Loop through configuration options and remove outdated settings.
     foreach ($this->configuration as $name=>$value) {
@@ -142,11 +152,12 @@ class ContentBlock extends BlockBase {
       $entity_view_modes = \Drupal::entityManager()->getViewModes($entity_type);
       // Load the entity display settings.
       $entity_display = entity_load('entity_view_display', "{$entity_type}.{$entity->getType()}.{$view_mode}");
-
+      $display_status = get_class($entity_display) === 'Drupal\Core\Entity\Entity\EntityViewDisplay'
+        ? $entity_display->get('status')
+        : (boolean)(!empty($this->configuration['force_display']) && $this->configuration['force_display'] == 1);
 
       // Validate the requested view mode.
-      if (!empty($entity_display->status) &&
-        $entity_display->status === TRUE &&
+      if ($display_status === TRUE &&
         !empty($entity_view_modes[$view_mode]['status']) &&
         $entity_view_modes[$view_mode]['status'] === TRUE
       ) {
