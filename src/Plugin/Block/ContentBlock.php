@@ -16,10 +16,11 @@ use Drupal\Core\Form\FormStateInterface;
  * @Block(
  *  id = "content_block",
  *  admin_label = @Translation("Content Block"),
+ *  category = @Translation("Content Block"),
  * )
  */
 class ContentBlock extends BlockBase {
-  
+
   /**
    * {@inheritdoc}
    */
@@ -121,6 +122,11 @@ class ContentBlock extends BlockBase {
    */
   public function build() {
 
+    // Buffer the uuid for alterations.
+    $uuid = '';
+    // Allow modules to override the entity, and view mode that will be output.
+    \Drupal::moduleHandler()->alter('content_block_pre_build', $uuid, $this->configuration);
+
     // Get the entity type.
     $entity_type = $this->configuration['entity_type'];
     // Name of the settings form field that contains the view mode to use.
@@ -128,11 +134,6 @@ class ContentBlock extends BlockBase {
 
     // Get the requested view mode machine name.
     $view_mode = !empty($this->configuration[$mode_key]) ? $this->configuration[$mode_key] : NULL;
-
-    // Buffer the uuid for alterations.
-    $uuid = '';
-    // Allow modules to override the entity, and view mode that will be output.
-    \Drupal::moduleHandler()->alter('content_block_pre_build', $entity_type, $uuid, $view_mode);
 
     // Make sure we have the necessary pieces to load an alternate entity.
     if (!empty($entity_type) && !empty($uuid)) {
