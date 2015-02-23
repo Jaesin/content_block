@@ -15,11 +15,18 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * @Block(
  *  id = "content_block",
- *  admin_label = @Translation("Content Block"),
+ *  admin_label = @Translation("Display Mode"),
  *  category = @Translation("Content Block"),
  * )
  */
 class ContentBlock extends BlockBase {
+
+  /**
+   * Types of entities that are available.
+   *
+   * @var array
+   */
+  protected $available_types;
 
   /**
    * {@inheritdoc}
@@ -27,11 +34,11 @@ class ContentBlock extends BlockBase {
   public function blockForm($form, FormStateInterface $form_state) {
 
     // Blacklist some entity type (like block).
-    $blacklist = array('block_content');
+    $blacklist = array('block', 'block_content');
     \Drupal::moduleHandler()->alter('content_block_entity_blacklist', $blacklist);
 
     // Initialize options arrays.
-    $type_options = array();
+    $this->available_types = array();
     $view_mode_options = array();
 
     // Get all entity view modes.
@@ -42,7 +49,7 @@ class ContentBlock extends BlockBase {
       // Check to see if the view mode is blacklisted.
       if (!in_array($entity_type, $blacklist)) {
         // Add the view mode to the list.
-        $type_options[$entity_type] = $entity_type;
+        $this->available_types[$entity_type] = $entity_type;
       }
       $view_mode_options[$entity_type]['default'] = t('--default--');
       // Get view mode options for this entity type.
@@ -59,13 +66,13 @@ class ContentBlock extends BlockBase {
     $form['entity_type'] = array(
       '#type' => 'select',
       '#title' => $this->t('Entity Type'),
-      '#options' => $type_options,
+      '#options' => $this->available_types,
       '#description' => $this->t('Select the type of content you would like to display.'),
-      '#default_value' => isset($this->configuration['entity_type']) ? $this->configuration['entity_type'] : '',
+      '#default_value' => isset($this->configuration['entity_type']) ? $this->configuration['entity_type'] : 'node',
     );
 
     // Loop through the available entity types.
-    foreach ($type_options as $entity_type) {
+    foreach ($this->available_types as $entity_type) {
       // Use a naming convention for the setting.
       $mode_key = "view_mode_{$entity_type}";
       // Add a view mode selector to use with each entity type.
@@ -104,26 +111,26 @@ class ContentBlock extends BlockBase {
     // Name of the settings form field that contains the view mode to use.
     $mode_key = "view_mode_{$entity_type}";
 
+    // Loop through configuration options and remove outdated settings.
+    foreach ($this->configuration as $name=>$value) {
+      if (substr($name, 0, 10) === 'view_mode_') {
+        unset($this->configuration[$name]);
+      }
+    }
     // Add the configuration form the submitted values.
     $this->configuration['entity_type'] = $entity_type;
     $this->configuration[$mode_key] = $form_state->getValue($mode_key);
     $this->configuration['force_display'] = $form_state->getValue('force_display');
 
-    // Loop through configuration options and remove outdated settings.
-    foreach ($this->configuration as $name=>$value) {
-      if (substr($name, 0, 10) == 'view_mode_' && $name != $mode_key) {
-        unset($this->configuration[$name]);
-      }
-    }
   }
 
   /**
    * {@inheritdoc}
+   *
+   * @param string $uuid The entity uuid to render.
    */
-  public function build() {
+  public function build($uuid=NULL) {
 
-    // Buffer the uuid for alterations.
-    $uuid = '';
     // Allow modules to override the entity, and view mode that will be output.
     \Drupal::moduleHandler()->alter('content_block_pre_build', $uuid, $this->configuration);
 
