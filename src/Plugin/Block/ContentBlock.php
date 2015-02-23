@@ -159,7 +159,7 @@ class ContentBlock extends BlockBase {
       // Get the view modes for this display type.
       $entity_view_modes = \Drupal::entityManager()->getViewModes($entity_type);
       // Load the entity display settings.
-      $entity_display = entity_load('entity_view_display', "{$entity_type}.{$entity->getType()}.{$view_mode}");
+      $entity_display = entity_load('entity_view_display', "{$entity_type}.{$entity->bundle()}.{$view_mode}");
       $display_status = get_class($entity_display) === 'Drupal\Core\Entity\Entity\EntityViewDisplay'
         ? $entity_display->get('status')
         : (boolean)(!empty($this->configuration['force_display']) && $this->configuration['force_display'] == 1);
